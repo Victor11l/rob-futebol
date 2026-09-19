@@ -2,12 +2,22 @@ import os
 import time
 import requests
 from flask import Flask
+import threading
 
-app = Flask(__name__)
-
-# Suas credenciais do Telegram
+# --- CONFIGURAÇÕES ---
 TELEGRAM_TOKEN = "8699095311:AAGm16_21HwBFNp-T0BQLQSp7yorKR2VkA4"
 CHAT_ID = "5662043242"
+RAPIDAPI_KEY = "74d2422d0fmshc41b54343716963p1aa78djsn567458323ada"  # Coloque a sua chave aqui dentro das aspas
+
+# Configuração do Servidor Web do Flask (Mantém o Render ativo 24h grátis)
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Robô de Futebol Ativo e a Funcionar!"
+
+# Para evitar alertas repetidos do mesmo jogo
+jogos_alertados = set()
 
 def enviar_telegram(mensagem):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -16,82 +26,87 @@ def enviar_telegram(mensagem):
         resposta = requests.post(url, json=payload)
         print("RESPOSTA DO TELEGRAM:", resposta.status_code, resposta.text)
     except Exception as e:
-        print("Erro ao enviar mensagem:", e)
+        print(f"Erro ao enviar mensagem no Telegram: {e}")
 
-# DISPARO IMEDIATO NA IMPORTAÇÃO (Assim que o Python lê o ficheiro)
-print("A enviar mensagem de arranque...")
-enviar_telegram("🤖 *Robô Ligado!* O sistema arrancou com sucesso no Render.")
+# Mensagem de teste instantânea para confirmar que ligou
+enviar_telegram("🤖 *Robô Atualizado e Conectado!* Monitorando Gols (75'+) e Cantos (80'+).")
 
-@app.route('/')
-def home():
-    return "Robô de Futebol Ativo!"
+def verificar_jogos():
+    url = "https://api-football-v1.p.rapidapi.com/v3/fixtures"
+    headers = {
+        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
+    }
+    params = {"live": "all"} # Busca todos os jogos ao vivo
 
-def monitorar_jogos():
     try:
-        url = "https://api-football-v1.p.rapidapi.com/v3/fixtures"
-        querystring = {"live": "all"}
-        headers = {
-            "X-RapidAPI-Key": "74d2422d0fmshc41b54343716963p1aa78djsn567458323ada",
-            "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
-        }
-        
-        resposta = requests.get(url, headers=headers, params=querystring, timeout=15)
-        dados = resposta.json()
-        jogos = dados.get('response', [])
-        
-        for jogo in jogos:
-            fixture = jogo.get('fixture', {})
-            minuto = fixture.get('status', {}).get('elapsed', 0)
-            
-            teams = jogo.get('teams', {})
-            nome_casa = teams.get('home', {}).get('name', 'Casa')
-            nome_fora = teams.get('away', {}).get('name', 'Fora')
-            
-            goals = jogo.get('goals', {})
-            gols_casa = goals.get('home') or 0
-            gols_fora = goals.get('away') or 0
+        response = requests.get(url, headers=headers, params=params, timeout=15)
+        dados = response.json()
 
-            statistics = jogo.get('statistics', [])
-            cantos_casa = 0
-            cantos_fora = 0
-            
-            for stat_team in statistics:
-                team_name = stat_team.get('team', {}).get('name')
-                for s in stat_team.get('statistics', []):
-                    if s.get('type') == 'Corner Kicks':
-                        val = s.get('value')
-                        if val is not None:
-                            if team_name == nome_casa:
-                                cantos_casa = int(val)
-                            elif team_name == nome_fora:
-                                cantos_fora = int(val)
+        if "response" not in dados:
+            return
 
-            nome_jogo = f"{nome_casa} vs {nome_fora}"
+        for partida in dados["response"]:
+            fixture_id = partida["fixture"]["id"]
+            minuto = partida["fixture"]["status"]["elapsed"]
+            time_casa = partida["teams"]["home"]["name"]
+            time_fora = partida["teams"]["away"]["name"]
+            
+            gols_casa = partida["goals"]["home"] if partida["goals"]["home"] is not None else 0
+            gols_fora = partida["goals"]["away"] if partida["goals"]["away"] is not None else 0
+
+            # Evita processar jogos sem minutos definidos (intervalo, adiados, etc)
+            if minuto is None:
+                continue
+
             placar = f"{gols_casa} x {gols_fora}"
 
-            # ESTRATÉGIA 1: GOL TARDIO (75' a 95')
+            # -------------------------------------------------------------------------
+            # CRITÉRIO 1: GOLS DOS 75' ATÉ O FIM (Qualquer Placar)
+            # -------------------------------------------------------------------------
             if 75 <= minuto <= 95:
-                enviar_telegram(f"⚽ *ALERTA DE GOL TARDIO*\n🎮 Jogo: {nome_jogo}\n⏱️ Minuto: {minuto}'\n📊 Placar: {placar}")
+                chave_alerta = f"{fixture_id}_gols_75"
+                if chave_alerta not in jogos_alertados:
+                    msg = (
+                        f"⚽ *ALERTA: GOL TARDIO (75'+)*\n\n"
+                        f"🎮 *{time_casa}* {placar} *{time_fora}*\n"
+                        f"⏱ *Minuto:* {minuto}'\n"
+                        f"💡 *Sugestão:* Jogo na reta final, buscar gol (qualquer placar)!"
+                    )
+                    enviar_telegram(msg)
+                    jogos_alertados.add(chave_alerta)
 
-            # ESTRATÉGIA 2: ESCANTEIOS DE PRESSÃO (80'+)
+            # -------------------------------------------------------------------------
+            # CRITÉRIO 2: ESCANTEIOS DOS 80' ATÉ O FIM (Pressão Final)
+            # -------------------------------------------------------------------------
             if minuto >= 80:
-                enviar_telegram(f"🚩 *ALERTA DE ESCANTEIOS*\n🎮 Jogo: {nome_jogo}\n⏱️ Minuto: {minuto}'\n📐 Cantos: {cantos_casa} a {cantos_fora}")
+                chave_alerta = f"{fixture_id}_cantos_80"
+                if chave_alerta not in jogos_alertados:
+                    msg = (
+                        f"🚩 *ALERTA: ESCANTEIOS / PRESSÃO (80'+)*\n\n"
+                        f"🎮 *{time_casa}* {placar} *{time_fora}*\n"
+                        f"⏱ *Minuto:* {minuto}'\n"
+                        f"💡 *Sugestão:* Pressão total no fim, buscar +1 ou +2 cantos!"
+                    )
+                    enviar_telegram(msg)
+                    jogos_alertados.add(chave_alerta)
 
     except Exception as e:
-        print("Erro na monitorização:", e)
+        print(f"Erro ao consultar API: {e}")
 
-def iniciar_loop():
-    import threading
+def rodar_loop_em_segundo_plano():
     def loop():
         while True:
-            monitorar_jogos()
+            verificar_jogos()
+            # Pausa de 60 segundos entre cada verificação para atualizar os minutos em tempo real
             time.sleep(60)
+            
     t = threading.Thread(target=loop)
     t.daemon = True
     t.start()
 
-# Inicia a thread do robô
-iniciar_loop()
+# Inicia a thread em segundo plano junto com o servidor web
+rodar_loop_em_segundo_plano()
 
 if __name__ == "__main__":
     porta = int(os.environ.get("PORT", 5000))

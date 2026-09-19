@@ -32,6 +32,8 @@ def enviar_telegram(mensagem):
     except Exception as e:
         print(f"Erro ao enviar: {e}")
 
+enviar_telegram("🤖 Teste de Notificação: O robô está ativo e a funcionar!")
+        
 def verificar_jogos():
     url = "https://api-football-v1.p.rapidapi.com/v3/fixtures"
     headers = {
@@ -79,5 +81,4 @@ def verificar_jogos():
 while True:
     verificar_jogos()
     time.sleep(900)
-
 enviar_telegram("🤖 Teste de Notificação: O robô está ativo e a funcionar!")

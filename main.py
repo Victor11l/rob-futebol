@@ -5,9 +5,9 @@ from flask import Flask
 import threading
 
 # --- CONFIGURAÇÕES ---
-TELEGRAM_TOKEN = "8699095311:AAGm16_21HwBFNp-T0BQLQSp7yorKR2VkA4"
+TELEGRAM_TOKEN = "8691804127:AAEBA2d0ufb2hm5-Zeinr0a0lXzygH8zxrM"
 CHAT_ID = "5662043242"
-RAPIDAPI_KEY = "74d2422d0fmshc41b54343716963p1a-a78djsn567458323ada"
+RAPIDAPI_KEY = "74d2422d0fmshc41b54343716963p1aa78djsn567458323ada"
 
 # Configuração do Servidor Web do Flask (Mantém o Render ativo 24h grátis)
 app = Flask(__name__)

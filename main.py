@@ -3,11 +3,24 @@ import time
 import requests
 from flask import Flask
 
-# Configuração do Servidor Web do Flask (Mantém o Render ativo 24h grátis)
 app = Flask(__name__)
+
+TELEGRAM_TOKEN = "8699095311:AAGm16_21HwBFNp-T0BQLQSp7yorKR2VkA4"
+CHAT_ID = "5662043242"
+
+def enviar_telegram(mensagem):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {"chat_id": CHAT_ID, "text": mensagem, "parse_mode": "Markdown"}
+    try:
+        resposta = requests.post(url, json=payload)
+        print("RESPOSTA DO TELEGRAM:", resposta.status_code, resposta.text)
+    except Exception as e:
+        print("Erro ao enviar mensagem:", e)
 
 @app.route('/')
 def home():
+    # Assim que o Render fizer um ping na página, enviamos o teste para confirmar!
+    enviar_telegram("🤖 *Robô Conectado com Sucesso!* Pronto para buscar Gols e Cantos.")
     return "Robô de Futebol Ativo e a Funcionar!"
 
 # Credenciais do Telegram

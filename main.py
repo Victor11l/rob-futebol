@@ -81,4 +81,4 @@ def verificar_jogos():
 while True:
     verificar_jogos()
     time.sleep(900)
-enviar_telegram("🤖 Teste de Notificação: O robô está ativo e a funcionar!")
+

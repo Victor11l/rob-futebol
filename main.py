@@ -7,7 +7,7 @@ import threading
 # --- CONFIGURAÇÕES ---
 TELEGRAM_TOKEN = "8699095311:AAGm16_21HwBFNp-T0BQLQSp7yorKR2VkA4"
 CHAT_ID = "5662043242"
-RAPIDAPI_KEY = "74d2422d0fmshc41b54343716963p1a-a78djsn567458323ada"  # Coloque a sua chave aqui dentro das aspas
+RAPIDAPI_KEY = "74d2422d0fmshc41b54343716963p1a-a78djsn567458323ada"
 
 # Configuração do Servidor Web do Flask (Mantém o Render ativo 24h grátis)
 app = Flask(__name__)

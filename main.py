@@ -34,7 +34,7 @@ enviar_telegram("🤖 *Robô Atualizado e Conectado!* Monitorando Gols (75'+) e 
 def verificar_jogos():
     url = "https://api-football-v1.p.rapidapi.com/v3/fixtures"
     headers = {
-        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Key": "74d2422d0fmshc41b54343716963p1a-a78djsn567458323ada",
         "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
     }
     params = {"live": "all"} # Busca todos os jogos ao vivo
